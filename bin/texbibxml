@@ -1,0 +1,28 @@
+#!/usr/bin/env ruby
+
+require "texbibxml"
+
+# Opaque parser of TeX math surrounded by `\(` and `\)` commands that treats
+# the entire TeX math expression as a single string.
+class TexMathOpaqueParser
+  include Texbibxml::Tex::OpaqueParser
+
+  def initialize
+    @left_command = "("
+    @right_command = ")"
+  end
+
+  def append_ast(input, parent_ast)
+    parent_ast.add_text(input.strip)
+  end
+end
+
+texbib_author_parser =
+  Texbibxml::Tex::Bib::Author::Parser.new([TexMathOpaqueParser.new])
+texbib_parser = Texbibxml::Tex::Bib::Parser.new(
+  "author" => lambda do |_, field_value, entry_ast|
+    texbib_author_parser.append_ast(field_value, entry_ast)
+  end
+)
+texbib_parser.parse(STDIN.readlines.join("")).write
+puts
